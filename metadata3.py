@@ -168,7 +168,7 @@ filename2 = "recommended.txt"
 filename3 = "copurchased.txt"
 filename_rand1 = "recom-rand1.txt"
 my_text = open(filename, "r")
-my_text2 = open(filename2, "r")
+my_text2 = open(filename2, "r") #
 my_text3 = open(filename3, "r")
 my_text_rand1 = open(filename_rand1, "r")
 
