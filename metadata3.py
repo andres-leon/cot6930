@@ -178,7 +178,6 @@ my_text_rand1 = open(filename_rand1, "r")
 def process_file(filename):
     # with open(filename, "r", encoding="utf8") as my_text:
     with my_text:
-
         last_pos = my_text.tell()
         line = my_text.readline()
         line = line.strip()
