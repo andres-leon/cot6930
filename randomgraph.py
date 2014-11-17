@@ -1,3 +1,8 @@
+
+'''
+This file creates a randomly generated graph based on the id's from the copurchasing data file
+'''
+
 import snap
 import time
 import statistics
@@ -6,6 +11,7 @@ import random
 
 copurchasingfile = "copurchased.txt"
 recommendedfile = "recommended.txt"
+resulting_random_file = "random_file.txt"
 
 my_text = open(copurchasingfile, "r")
 
@@ -88,7 +94,7 @@ for id, simlist in ids_with_recom.iteritems():
 #     print itm
 
 #random graph
-f = open("0302-random-graph2.txt", 'w')
+f = open(resulting_random_file, 'w')
 allids = list()
 allids = idlist
 allids.extend(totlconnlst) # all the ids from the TO and FROM columns
