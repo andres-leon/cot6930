@@ -461,7 +461,6 @@ def load_similar_list():
             itmsWithSimsCounter += 1
     print("ids_with_similar wih similar items: " + str(itmsWithSimsCounter))
 
-
 def load_similar_network_file():
     # creates the network graph text file that connects product ids
     # with their similar items from the metadata file.
@@ -478,7 +477,6 @@ def load_similar_network_file():
 
     f.close()
     print("nodes: " + str(numofnodes) + " edges: " + str(numofedges))
-
 
 def getsimilarpurchasedids(nodeid):
     returnlist = list()
@@ -574,7 +572,6 @@ def comparedicts(dict1, dict2):
     print "Count of 2: %d " % count2
     print "Count of 3: %d " % count3
     print "Count of 4: %d " % count4
-
 
 
 def main():
