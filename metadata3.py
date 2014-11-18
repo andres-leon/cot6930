@@ -26,12 +26,16 @@ Date     |   Changes
          | comparison with the co-purchased (similar) data. Results are stored in csv files.
 11/14/14 | (AL) Added command line jaccardcompare to perform this action. no parameters are needed.
 11/14/14 | (AL) Added this file to GitHub for version control.
+11/18/14 | (EL) Created a second random recommendation graph named recom-rand2.txt
+11/18/14 | (EL) Edited main function code to put recom-rand2.txt into a dictionary called ids_with_recom_rand2
+11/18/14 | (EL) Edited the jaccardcompare and do_jaccardcompare to run jaccard compare on new random graph
 ------------------------------------------------------------------------------------------------------------
 
 Notes:  Make sure to have these files in your project directory:
 (1) recommended.txt  (used to be amazon0302.txt)
 (2) copurchased.txt (used to be similar-network.txt)
 (3) recom-rand1.txt (used to be 0302-random-graph.txt)
+(4) recom-rand2.txt
 
 Both files need to be only numbers, no headers
 '''
@@ -49,6 +53,7 @@ ids_with_similar = {}  # dictionary with key id and value of list of similar id'
 ids_with_similar_file = {}  # dictionary with same data as ids_with_similar except read from a similar
 ids_with_recom = {}  # dictionary with key id and value of list of recommended ids from amazon0302
 ids_with_recom_rand1 = {}  # dictionary to store the first randomly generated recommended nodes graph
+ids_with_recom_rand2 = {}  # dictionary to store the second randomly generated recommended nodes graph
 toList = []
 
 class NodeItem(object):
@@ -167,10 +172,12 @@ filename = "amazon-meta.txt"
 filename2 = "recommended.txt"
 filename3 = "copurchased.txt"
 filename_rand1 = "recom-rand1.txt"
-my_text = open(filename, "r")
+filename_rand2 = "recom-rand2.txt"
+#my_text = open(filename, "r")
 my_text2 = open(filename2, "r") #
 my_text3 = open(filename3, "r")
 my_text_rand1 = open(filename_rand1, "r")
+my_text_rand2 = open(filename_rand2, "r");
 
 # used to read data from the meta-data.txt and store it in a dictionary called nodes
 def process_file(filename):
@@ -429,17 +436,30 @@ class cmdShell(cmd.Cmd):
         total_time = end_time - start_time
         print("Done in " + str(total_time / 60) + " minute(s).")
 
+    def do_runcomparisonrand2(self, line):
+        'Runs a comparison on the original recommended data (recommended.txt) and the 2nd randomly generated recom data'
+        start_time = time.clock()
+        print("Comparing the two dictionaries: ids_with_similar_file and ids_with_recom_rand2")
+        comparedicts(ids_with_similar_file, ids_with_recom_rand2)
+        print("Done comparing. Total items in recom-rand2.txt = " + str(len(ids_with_recom_rand2)))
+        print("Total items in similar-network.txt = " + str(len(ids_with_similar_file)))
+        end_time = time.clock()
+        total_time = end_time - start_time
+        print("Done in " + str(total_time / 60) + " minute(s).")
+
     def do_jaccardcompare(self, line):
         'Compares the items of the copurchasing data with the recommended and random data. No parameters.'
         start_time = time.clock()
         print("START Performing Jaccard comparison with recommended file")
         jaccardcompare("rec")
         print("DONE Performing Jaccard comparison with recommended file")
-        print("START Performing Jaccard comparison with random file")
+        print("START Performing Jaccard comparison with first random file")
         jaccardcompare("ran")
+        print("START Performing Jaccard comparison with second random file")
+        jaccardcompare("ran2")
         end_time = time.clock()
         total_time = end_time - start_time
-        print("DONE Performing Jaccard comparison with random file")
+        print("DONE Performing Jaccard comparison with the files")
         print("Done. Execution Time: " + str(total_time) + " secs.")
 
 def load_similar_list():
@@ -512,9 +532,12 @@ def jaccardcompare(file_type):
         if file_type == "rec":
             b = ids_with_recom.get(new_key, 'none')
             csv_file_name = "jaccardscore01RECOMMENDED.csv"
-        else:
+        elif file_type == "ran":
             b = ids_with_recom_rand1.get(new_key, 'none')
             csv_file_name = "jaccardscore01RANDOM.csv"
+        else:
+            b = ids_with_recom_rand2.get(new_key, 'none')
+            csv_file_name = "jaccardscore01RANDOM2.csv"
         # the dict.get(x, y): x = key of dictionary (with single quotes around it),
         # y = if no key that is passed is found, return THIS ('none') instead
         if (a or b) <> 'none':
@@ -626,11 +649,20 @@ def main():
     total_time = end_time - start_time
     print("Done in " + str(total_time / 60) + " minute(s).")'''
 
-    # Creating ids_with_recom_rand from recom_rand1.txt
+    # Creating ids_with_recom_rand1 from recom-rand1.txt
     start_time = time.clock()
     print("Creating random recommendation list from recom-rand1.txt")
     process_graph_file(filename_rand1, ids_with_recom_rand1, my_text_rand1)
     print("Done connecting. total items = " + str(len(ids_with_recom_rand1)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    # Creating ids_with_recom_rand2 from recom-rand2.txt
+    start_time = time.clock()
+    print("Creating random recommendation list from recom-rand2.txt")
+    process_graph_file(filename_rand2, ids_with_recom_rand2, my_text_rand2)
+    print("Done connecting. total items = " + str(len(ids_with_recom_rand2)))
     end_time = time.clock()
     total_time = end_time - start_time
     print("Done in " + str(total_time / 60) + " minute(s).")
