@@ -3,9 +3,6 @@
 This file creates a randomly generated graph based on the id's from the copurchasing data file
 '''
 
-import snap
-import time
-import statistics
 import random
 
 
