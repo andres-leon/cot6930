@@ -573,6 +573,7 @@ def jaccardcompare(file_type):
 def cosinesim(file_type):
     cosine_scores = {}
     # loop through the dictionaries and do comparison by cosine similiarity
+    highestall = 0
     for key in range(1, 361567):
         new_key = str(key)
         # reassign the list in value of each item to a new one so they can be compared
@@ -589,30 +590,55 @@ def cosinesim(file_type):
         '''if (a or b) <> 'none':
             a = np.array(a, np.float)
             b = np.array(b, np.float)'''
+
+        # this is used to make the vectors the same size by adding extra zeros
+        # dictionaries will be unusable after this for other calculations
+
+        if a <> 'none':
+            if b <> 'none':
+                if(len(a) <> len(b)):
+                    toaddA = 7 - len(a)
+                    toaddB = 7 - len(b)
+                    counterA = toaddA
+                    counterB = toaddB
+                    for x in range(0, toaddA):
+                        a.insert(counterA, 0)
+                        ++counterA
+                    for y in range(0, toaddB):
+                        b.insert(counterB, 0)
+                        ++counterB
+
+
         # the dict.get(x, y): x = key of dictionary (with single quotes around it),
         # y = if no key that is passed is found, return THIS ('none') instead
-        if len(a) == len(b):
-            if a <> 'none':
-                if b <> 'none':
-                    # arrays must be converted to floats to have np.linalg used on them
+        #if len(a) == len(b):
+        if a <> 'none':
+            if b <> 'none':
+                # arrays must be converted to floats to have np.linalg used on them
 
-                    a = np.array(a, np.float)
-                    b = np.array(b, np.float)
+                a = np.array(a, np.float)
+                b = np.array(b, np.float)
 
-                    # cosine sim done here
-                    ab = np.linalg.norm(a) / np.linalg.norm(b)
-                    abdot = np.vdot(a,b)
-                    cosinesim = abdot / ab
+                cosinesim = np.dot(a,b.T)/np.linalg.norm(a)/np.linalg.norm(b)
+                # cosine sim done here
+                #ab = np.linalg.norm(a) / np.linalg.norm(b)
+                #print ab
 
-                    if cosinesim > 0:
-                        cosine_scores[key] = cosinesim
-                    else:
-                        cosine_scores[key] = 0.0
+                #abdot = np.vdot(a,b)
+                #print abdot
 
-                    if float(cosine_scores[key]) > 0:
-                        print(new_key + " = " + str(cosine_scores[key]))
+                #cosinesim = abdot / ab
+
+                if cosinesim > 0:
+                    cosine_scores[key] = cosinesim
+                else:
+                    cosine_scores[key] = 0.0
+
+                if float(cosine_scores[key]) > 0:
+                    print(new_key + " = " + str(cosine_scores[key]))
 
     printtocsv(cosine_scores, csv_file_name2)
+
 
 def comparedicts(dict1, dict2):
     # initialze counters
