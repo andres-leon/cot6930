@@ -30,6 +30,10 @@ Date     |   Changes
 11/18/14 | (EL) Edited main function code to put recom-rand2.txt into a dictionary called ids_with_recom_rand2
 11/18/14 | (EL) Edited the jaccardcompare and do_jaccardcompare to run jaccard compare on new random graph
 11/18/14 | (EL) Added function for Cosine Similarity cosinesim and the cooresponding cmd line "do" function
+11/21/14 | (EL) Edited Cosine Sim functionality to allow for it to work properly
+11/22/14 | (EL) Imported SNAP into project
+11/22/14 | (EL) Created graphs for each list: rec_graph, copur_graph, rec_rand1_graph, rec_rand2_graph
+11/22/14 | (EL) Added Pagerank funciton for each graph
 ------------------------------------------------------------------------------------------------------------
 
 Notes:  Make sure to have these files in your project directory:
@@ -47,6 +51,7 @@ import time
 import cmd
 import csv
 import numpy as np
+import snap
 
 similaritynetworkfilename = 'similar-network.txt'
 nodes = {}  # dictionary of nodes indexed by id. it holds objects of class Node
@@ -57,6 +62,10 @@ ids_with_recom = {}  # dictionary with key id and value of list of recommended i
 ids_with_recom_rand1 = {}  # dictionary to store the first randomly generated recommended nodes graph
 ids_with_recom_rand2 = {}  # dictionary to store the second randomly generated recommended nodes graph
 toList = []
+rec_graph = snap.LoadEdgeList(snap.PNGraph, "recommended.txt", 0, 1)
+copur_graph = snap.LoadEdgeList(snap.PNGraph, "copurchased.txt", 0, 1)
+rec_rand1_graph = snap.LoadEdgeList(snap.PNGraph, "recom-rand1.txt", 0, 1)
+rec_rand2_graph = snap.LoadEdgeList(snap.PNGraph, "recom-rand2.txt", 0, 1)
 
 class NodeItem(object):
     nodeid = -1
@@ -479,6 +488,30 @@ class cmdShell(cmd.Cmd):
         print("DONE Performing Cosine Similarity comparison with the files")
         print("Done. Execution Time: " + str(total_time) + " secs.")
 
+    def do_getgraphsize(self,line):
+        'Returns the size of a graph input: rec, copur, ran, or ran2'
+        if line == 'rec':
+            print "Recommendation Graph: Nodes %d, Edges %d" % (rec_graph.GetNodes(), rec_graph.GetEdges())
+        elif line == 'copur':
+            print "CoPurchased Graph: Nodes %d, Edges %d" % (copur_graph.GetNodes(), copur_graph.GetEdges())
+        elif line == 'ran':
+            print "Random Graph 1: Nodes %d, Edges %d" % (rec_rand1_graph.GetNodes(), rec_rand1_graph.GetEdges())
+        elif line == 'ran2':
+            print "Random Graph 2: Nodes %d, Edges %d" % (rec_rand2_graph.GetNodes(), rec_rand2_graph.GetEdges())
+
+    def do_getpagerank(self,line):
+        'Prints the pagerank of each node depending on input graph: rec, copur, ran, ran2'
+        if line == 'rec':
+            pagerank("rec")
+        elif line == 'copur':
+            pagerank("copur")
+        elif line == 'ran':
+            pagerank("ran")
+        elif line == 'ran2':
+            pagerank("ran2")
+
+
+
 def load_similar_list():
     for key, val in nodes.iteritems():
         similaridlist = list()
@@ -639,6 +672,30 @@ def cosinesim(file_type):
 
     printtocsv(cosine_scores, csv_file_name2)
 
+def pagerank(file_type):
+    if(file_type == "rec"):
+        PRankH = snap.TIntFltH()
+        snap.GetPageRank(rec_graph, PRankH)
+        for item in PRankH:
+            print item, PRankH[item]
+    elif(file_type == "copur"):
+        PRankH = snap.TIntFltH()
+        snap.GetPageRank(copur_graph, PRankH)
+        for item in PRankH:
+            print item, PRankH[item]
+    elif(file_type == "ran"):
+        PRankH = snap.TIntFltH()
+        snap.GetPageRank(rec_rand1_graph, PRankH)
+        for item in PRankH:
+            print item, PRankH[item]
+    elif(file_type == "ran2"):
+        PRankH = snap.TIntFltH()
+        snap.GetPageRank(rec_rand2_graph, PRankH)
+        for item in PRankH:
+            print item, PRankH[item]
+
+
+
 
 def comparedicts(dict1, dict2):
     # initialze counters
@@ -753,6 +810,9 @@ def main():
     end_time = time.clock()
     total_time = end_time - start_time
     print("Done in " + str(total_time / 60) + " minute(s).")
+
+
+
 
 if __name__ == "__main__":
     main()
