@@ -34,6 +34,8 @@ Date     |   Changes
 11/22/14 | (EL) Imported SNAP into project
 11/22/14 | (EL) Created graphs for each list: rec_graph, copur_graph, rec_rand1_graph, rec_rand2_graph
 11/22/14 | (EL) Added Pagerank funciton for each graph
+11/22/14 | (EL) Edited Pagerank function, now put into dictionarys and difference between scores is done and stored
+         | in csv files.
 ------------------------------------------------------------------------------------------------------------
 
 Notes:  Make sure to have these files in your project directory:
