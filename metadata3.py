@@ -61,6 +61,13 @@ ids_with_similar_file = {}  # dictionary with same data as ids_with_similar exce
 ids_with_recom = {}  # dictionary with key id and value of list of recommended ids from amazon0302
 ids_with_recom_rand1 = {}  # dictionary to store the first randomly generated recommended nodes graph
 ids_with_recom_rand2 = {}  # dictionary to store the second randomly generated recommended nodes graph
+rec_pagerank_dict = {}  # pagerank dictionaries established here
+copur_pagerank_dict = {}
+rec_rand1_pagerank_dict = {}
+rec_rand2_pagerank_dict = {}
+diff_dict = {}
+diff_dict_rand1 = {}
+diff_dict_rand2 = {}
 toList = []
 rec_graph = snap.LoadEdgeList(snap.PNGraph, "recommended.txt", 0, 1)
 copur_graph = snap.LoadEdgeList(snap.PNGraph, "copurchased.txt", 0, 1)
@@ -500,15 +507,11 @@ class cmdShell(cmd.Cmd):
             print "Random Graph 2: Nodes %d, Edges %d" % (rec_rand2_graph.GetNodes(), rec_rand2_graph.GetEdges())
 
     def do_getpagerank(self,line):
-        'Prints the pagerank of each node depending on input graph: rec, copur, ran, ran2'
-        if line == 'rec':
-            pagerank("rec")
-        elif line == 'copur':
+        'Prints the pagerank difference of recommandation compared to: copur, ran'
+        if line == 'copur':
             pagerank("copur")
         elif line == 'ran':
             pagerank("ran")
-        elif line == 'ran2':
-            pagerank("ran2")
 
 
 
@@ -673,26 +676,76 @@ def cosinesim(file_type):
     printtocsv(cosine_scores, csv_file_name2)
 
 def pagerank(file_type):
-    if(file_type == "rec"):
-        PRankH = snap.TIntFltH()
-        snap.GetPageRank(rec_graph, PRankH)
-        for item in PRankH:
-            print item, PRankH[item]
-    elif(file_type == "copur"):
-        PRankH = snap.TIntFltH()
-        snap.GetPageRank(copur_graph, PRankH)
-        for item in PRankH:
-            print item, PRankH[item]
+    if(file_type == "copur"):
+        start_time = time.clock()
+        print("Creating PageRank dictionaries")
+
+        rec_pr = snap.TIntFltH()
+        copur_pr = snap.TIntFltH()
+
+        snap.GetPageRank(rec_graph, rec_pr)
+        snap.GetPageRank(copur_graph, copur_pr)
+
+        for item in rec_pr:
+            rec_pagerank_dict[item] = rec_pr[item] * 10000000
+        print "Recommendation dictionary created"
+        for item in copur_pr:
+            copur_pagerank_dict[item] = copur_pr[item] * 10000000
+        print "CoPurchase dictionary created"
+
+
+        for x in range(1, 300000):
+            if(x in rec_pagerank_dict):
+                if(x in copur_pagerank_dict):
+
+                    diff_dict[x] = rec_pagerank_dict[x] - copur_pagerank_dict[x] # negative if less recommended than purchased
+
+        printtocsv(diff_dict, "CoPurPageRank.csv")
+
+        print("Done creating.")
+        end_time = time.clock()
+        total_time = end_time - start_time
+        print("Done in " + str(total_time / 60) + " minute(s).")
+
     elif(file_type == "ran"):
-        PRankH = snap.TIntFltH()
-        snap.GetPageRank(rec_rand1_graph, PRankH)
-        for item in PRankH:
-            print item, PRankH[item]
-    elif(file_type == "ran2"):
-        PRankH = snap.TIntFltH()
-        snap.GetPageRank(rec_rand2_graph, PRankH)
-        for item in PRankH:
-            print item, PRankH[item]
+        start_time = time.clock()
+        print("Creating PageRank dictionaries")
+        rec_pr = snap.TIntFltH()
+        rand1_pr = snap.TIntFltH()
+        rand2_pr = snap.TIntFltH()
+
+        snap.GetPageRank(rec_graph, rec_pr)
+        snap.GetPageRank(rec_rand1_graph, rand1_pr)
+        snap.GetPageRank(rec_rand2_graph, rand2_pr)
+
+        for item in rec_pr:
+            rec_pagerank_dict[item] = rec_pr[item] * 10000000
+        for item in rand1_pr:
+            rec_rand1_pagerank_dict[item] = rand1_pr[item] * 10000000
+        for item in rand2_pr:
+            rec_rand2_pagerank_dict[item] = rand2_pr[item] * 10000000
+
+        for x in range(1, 300000):
+            if(x in rec_pagerank_dict):
+                if(x in rec_rand1_pagerank_dict):
+
+                    diff_dict_rand1[x] = rec_pagerank_dict[x] - rec_rand1_pagerank_dict[x] # negative if less recommended than purchased
+
+        for x in range(1, 300000):
+            if(x in rec_pagerank_dict):
+                if(x in rec_rand2_pagerank_dict):
+
+                    diff_dict_rand2[x] = rec_pagerank_dict[x] - rec_rand2_pagerank_dict[x] # negative if less recommended than purchased
+
+        printtocsv(diff_dict_rand1, "Rand1PageRank.csv")
+        printtocsv(diff_dict_rand2, "Rand2PageRank.csv")
+
+        print("Done creating.")
+        end_time = time.clock()
+        total_time = end_time - start_time
+        print("Done in " + str(total_time / 60) + " minute(s).")
+
+
 
 
 
