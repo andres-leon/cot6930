@@ -589,7 +589,7 @@ def cosinesim(file_type):
             csv_file_name2 = "cosinescore01RANDOM2.csv"
         '''if (a or b) <> 'none':
             a = np.array(a, np.float)
-            b = np.array(b, np.float)'''
+            b = np.array(b, np.float) '''
 
         # this is used to make the vectors the same size by adding extra zeros
         # dictionaries will be unusable after this for other calculations
