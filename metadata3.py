@@ -30,6 +30,12 @@ Date     |   Changes
 11/18/14 | (EL) Edited main function code to put recom-rand2.txt into a dictionary called ids_with_recom_rand2
 11/18/14 | (EL) Edited the jaccardcompare and do_jaccardcompare to run jaccard compare on new random graph
 11/18/14 | (EL) Added function for Cosine Similarity cosinesim and the cooresponding cmd line "do" function
+11/21/14 | (EL) Edited Cosine Sim functionality to allow for it to work properly
+11/22/14 | (EL) Imported SNAP into project
+11/22/14 | (EL) Created graphs for each list: rec_graph, copur_graph, rec_rand1_graph, rec_rand2_graph
+11/22/14 | (EL) Added Pagerank funciton for each graph
+11/22/14 | (EL) Edited Pagerank function, now put into dictionarys and difference between scores is done and stored
+         | in csv files.
 ------------------------------------------------------------------------------------------------------------
 
 Notes:  Make sure to have these files in your project directory:
@@ -47,6 +53,7 @@ import time
 import cmd
 import csv
 import numpy as np
+import snap
 
 similaritynetworkfilename = 'similar-network.txt'
 nodes = {}  # dictionary of nodes indexed by id. it holds objects of class Node
@@ -56,7 +63,18 @@ ids_with_similar_file = {}  # dictionary with same data as ids_with_similar exce
 ids_with_recom = {}  # dictionary with key id and value of list of recommended ids from amazon0302
 ids_with_recom_rand1 = {}  # dictionary to store the first randomly generated recommended nodes graph
 ids_with_recom_rand2 = {}  # dictionary to store the second randomly generated recommended nodes graph
+rec_pagerank_dict = {}  # pagerank dictionaries established here
+copur_pagerank_dict = {}
+rec_rand1_pagerank_dict = {}
+rec_rand2_pagerank_dict = {}
+diff_dict = {}
+diff_dict_rand1 = {}
+diff_dict_rand2 = {}
 toList = []
+rec_graph = snap.LoadEdgeList(snap.PNGraph, "recommended.txt", 0, 1)
+copur_graph = snap.LoadEdgeList(snap.PNGraph, "copurchased.txt", 0, 1)
+rec_rand1_graph = snap.LoadEdgeList(snap.PNGraph, "recom-rand1.txt", 0, 1)
+rec_rand2_graph = snap.LoadEdgeList(snap.PNGraph, "recom-rand2.txt", 0, 1)
 
 class NodeItem(object):
     nodeid = -1
@@ -478,6 +496,26 @@ class cmdShell(cmd.Cmd):
         print("DONE Performing Cosine Similarity comparison with the files")
         print("Done. Execution Time: " + str(total_time) + " secs.")
 
+    def do_getgraphsize(self,line):
+        'Returns the size of a graph input: rec, copur, ran, or ran2'
+        if line == 'rec':
+            print "Recommendation Graph: Nodes %d, Edges %d" % (rec_graph.GetNodes(), rec_graph.GetEdges())
+        elif line == 'copur':
+            print "CoPurchased Graph: Nodes %d, Edges %d" % (copur_graph.GetNodes(), copur_graph.GetEdges())
+        elif line == 'ran':
+            print "Random Graph 1: Nodes %d, Edges %d" % (rec_rand1_graph.GetNodes(), rec_rand1_graph.GetEdges())
+        elif line == 'ran2':
+            print "Random Graph 2: Nodes %d, Edges %d" % (rec_rand2_graph.GetNodes(), rec_rand2_graph.GetEdges())
+
+    def do_getpagerank(self,line):
+        'Prints the pagerank difference of recommandation compared to: copur, ran'
+        if line == 'copur':
+            pagerank("copur")
+        elif line == 'ran':
+            pagerank("ran")
+
+
+
 def load_similar_list():
     for key, val in nodes.iteritems():
         similaridlist = list()
@@ -572,6 +610,7 @@ def jaccardcompare(file_type):
 def cosinesim(file_type):
     cosine_scores = {}
     # loop through the dictionaries and do comparison by cosine similiarity
+    highestall = 0
     for key in range(1, 361567):
         new_key = str(key)
         # reassign the list in value of each item to a new one so they can be compared
@@ -587,31 +626,130 @@ def cosinesim(file_type):
             csv_file_name2 = "cosinescore01RANDOM2.csv"
         '''if (a or b) <> 'none':
             a = np.array(a, np.float)
-            b = np.array(b, np.float)'''
+            b = np.array(b, np.float) '''
+
+        # this is used to make the vectors the same size by adding extra zeros
+        # dictionaries will be unusable after this for other calculations
+
+        if a <> 'none':
+            if b <> 'none':
+                if(len(a) <> len(b)):
+                    toaddA = 7 - len(a)
+                    toaddB = 7 - len(b)
+                    counterA = toaddA
+                    counterB = toaddB
+                    for x in range(0, toaddA):
+                        a.insert(counterA, 0)
+                        ++counterA
+                    for y in range(0, toaddB):
+                        b.insert(counterB, 0)
+                        ++counterB
+
+
         # the dict.get(x, y): x = key of dictionary (with single quotes around it),
         # y = if no key that is passed is found, return THIS ('none') instead
-        if len(a) == len(b):
-            if a <> 'none':
-                if b <> 'none':
-                    # arrays must be converted to floats to have np.linalg used on them
+        #if len(a) == len(b):
+        if a <> 'none':
+            if b <> 'none':
+                # arrays must be converted to floats to have np.linalg used on them
 
-                    a = np.array(a, np.float)
-                    b = np.array(b, np.float)
+                a = np.array(a, np.float)
+                b = np.array(b, np.float)
 
-                    # cosine sim done here
-                    ab = np.linalg.norm(a) / np.linalg.norm(b)
-                    abdot = np.vdot(a,b)
-                    cosinesim = abdot / ab
+                cosinesim = np.dot(a,b.T)/np.linalg.norm(a)/np.linalg.norm(b)
+                # cosine sim done here
+                #ab = np.linalg.norm(a) / np.linalg.norm(b)
+                #print ab
 
-                    if cosinesim > 0:
-                        cosine_scores[key] = cosinesim
-                    else:
-                        cosine_scores[key] = 0.0
+                #abdot = np.vdot(a,b)
+                #print abdot
 
-                    if float(cosine_scores[key]) > 0:
-                        print(new_key + " = " + str(cosine_scores[key]))
+                #cosinesim = abdot / ab
+
+                if cosinesim > 0:
+                    cosine_scores[key] = cosinesim
+                else:
+                    cosine_scores[key] = 0.0
+
+                if float(cosine_scores[key]) > 0:
+                    print(new_key + " = " + str(cosine_scores[key]))
 
     printtocsv(cosine_scores, csv_file_name2)
+
+def pagerank(file_type):
+    if(file_type == "copur"):
+        start_time = time.clock()
+        print("Creating PageRank dictionaries")
+
+        rec_pr = snap.TIntFltH()
+        copur_pr = snap.TIntFltH()
+
+        snap.GetPageRank(rec_graph, rec_pr)
+        snap.GetPageRank(copur_graph, copur_pr)
+
+        for item in rec_pr:
+            rec_pagerank_dict[item] = rec_pr[item] * 10000000
+        print "Recommendation dictionary created"
+        for item in copur_pr:
+            copur_pagerank_dict[item] = copur_pr[item] * 10000000
+        print "CoPurchase dictionary created"
+
+
+        for x in range(1, 300000):
+            if(x in rec_pagerank_dict):
+                if(x in copur_pagerank_dict):
+
+                    diff_dict[x] = rec_pagerank_dict[x] - copur_pagerank_dict[x] # negative if less recommended than purchased
+
+        printtocsv(diff_dict, "CoPurPageRank.csv")
+
+        print("Done creating.")
+        end_time = time.clock()
+        total_time = end_time - start_time
+        print("Done in " + str(total_time / 60) + " minute(s).")
+
+    elif(file_type == "ran"):
+        start_time = time.clock()
+        print("Creating PageRank dictionaries")
+        rec_pr = snap.TIntFltH()
+        rand1_pr = snap.TIntFltH()
+        rand2_pr = snap.TIntFltH()
+
+        snap.GetPageRank(rec_graph, rec_pr)
+        snap.GetPageRank(rec_rand1_graph, rand1_pr)
+        snap.GetPageRank(rec_rand2_graph, rand2_pr)
+
+        for item in rec_pr:
+            rec_pagerank_dict[item] = rec_pr[item] * 10000000
+        for item in rand1_pr:
+            rec_rand1_pagerank_dict[item] = rand1_pr[item] * 10000000
+        for item in rand2_pr:
+            rec_rand2_pagerank_dict[item] = rand2_pr[item] * 10000000
+
+        for x in range(1, 300000):
+            if(x in rec_pagerank_dict):
+                if(x in rec_rand1_pagerank_dict):
+
+                    diff_dict_rand1[x] = rec_pagerank_dict[x] - rec_rand1_pagerank_dict[x] # negative if less recommended than purchased
+
+        for x in range(1, 300000):
+            if(x in rec_pagerank_dict):
+                if(x in rec_rand2_pagerank_dict):
+
+                    diff_dict_rand2[x] = rec_pagerank_dict[x] - rec_rand2_pagerank_dict[x] # negative if less recommended than purchased
+
+        printtocsv(diff_dict_rand1, "Rand1PageRank.csv")
+        printtocsv(diff_dict_rand2, "Rand2PageRank.csv")
+
+        print("Done creating.")
+        end_time = time.clock()
+        total_time = end_time - start_time
+        print("Done in " + str(total_time / 60) + " minute(s).")
+
+
+
+
+
 
 def comparedicts(dict1, dict2):
     # initialze counters
@@ -726,6 +864,9 @@ def main():
     end_time = time.clock()
     total_time = end_time - start_time
     print("Done in " + str(total_time / 60) + " minute(s).")
+
+
+
 
 if __name__ == "__main__":
     main()
