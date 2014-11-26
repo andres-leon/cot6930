@@ -54,6 +54,7 @@ import cmd
 import csv
 import numpy as np
 import snap
+import collections
 
 similaritynetworkfilename = 'similar-network.txt'
 nodes = {}  # dictionary of nodes indexed by id. it holds objects of class Node
@@ -70,11 +71,13 @@ rec_rand2_pagerank_dict = {}
 diff_dict = {}
 diff_dict_rand1 = {}
 diff_dict_rand2 = {}
+simrank_dict = {}
 toList = []
 rec_graph = snap.LoadEdgeList(snap.PNGraph, "recommended.txt", 0, 1)
 copur_graph = snap.LoadEdgeList(snap.PNGraph, "copurchased.txt", 0, 1)
 rec_rand1_graph = snap.LoadEdgeList(snap.PNGraph, "recom-rand1.txt", 0, 1)
 rec_rand2_graph = snap.LoadEdgeList(snap.PNGraph, "recom-rand2.txt", 0, 1)
+
 
 class NodeItem(object):
     nodeid = -1
@@ -193,7 +196,7 @@ filename2 = "recommended.txt"
 filename3 = "copurchased.txt"
 filename_rand1 = "recom-rand1.txt"
 filename_rand2 = "recom-rand2.txt"
-#my_text = open(filename, "r")
+my_text = open(filename, "r")
 my_text2 = open(filename2, "r") #
 my_text3 = open(filename3, "r")
 my_text_rand1 = open(filename_rand1, "r")
@@ -514,6 +517,15 @@ class cmdShell(cmd.Cmd):
         elif line == 'ran':
             pagerank("ran")
 
+    def do_simrank(self,line):
+        'Prints the simrank of selected graph with recommendation and outputs in txt file: copur, ran, ran2'
+        if line == 'copur':
+            simrank(ids_with_similar_file, ids_with_recom)
+        elif line == 'ran':
+            simrank(ids_with_similar_file, ids_with_recom_rand1)
+        elif line == 'ran2':
+            simrank(ids_with_similar_file, ids_with_recom_rand2)
+
 
 
 def load_similar_list():
@@ -657,14 +669,6 @@ def cosinesim(file_type):
                 b = np.array(b, np.float)
 
                 cosinesim = np.dot(a,b.T)/np.linalg.norm(a)/np.linalg.norm(b)
-                # cosine sim done here
-                #ab = np.linalg.norm(a) / np.linalg.norm(b)
-                #print ab
-
-                #abdot = np.vdot(a,b)
-                #print abdot
-
-                #cosinesim = abdot / ab
 
                 if cosinesim > 0:
                     cosine_scores[key] = cosinesim
@@ -745,6 +749,86 @@ def pagerank(file_type):
         end_time = time.clock()
         total_time = end_time - start_time
         print("Done in " + str(total_time / 60) + " minute(s).")
+
+def simrank(dict1, dict2):
+
+    # loop through the dictionaries and do comparison
+    for key in range(1, 361567):
+        # key here has to be formatted to be used with dict.get.  Needs
+        # to be in format of integer?
+        new_key = key
+        new_key = '%d' % new_key
+
+        # reassign the list in value of each item to a new one so they can be compared
+        a = dict1.get(new_key, [-1])
+        b = dict2.get(new_key, [-1])
+
+        # the dict.get(x, y): x = key of dictionary (with single quotes around it),
+        # y = if no key that is passed is found, return THIS ('none') instead
+        if (a or b) <> 'none':
+
+            # simrank equation
+
+            simrank = float((len(set(a).intersection(b)))) / float(len(a) * len(b))
+
+            # hacking out the unusual 1s that are a result of the list of -1 above, making them 0s
+
+            if simrank == 1:
+                simrank = 0
+
+            simrank_dict[new_key] = simrank
+
+            print "key: %s simrank: %f" % (new_key, float(simrank))
+            print '------------------------'
+
+    if dict2 == ids_with_recom:
+        printtocsv(simrank_dict, "simrank_copur.csv")
+    elif dict2 == ids_with_recom_rand1:
+        printtocsv(simrank_dict, "simrank_rand1.csv")
+    elif dict2 == ids_with_recom_rand2:
+        printtocsv(simrank_dict, "simrank_rand2.csv")
+
+
+
+
+
+
+
+
+    '''ids_with_recom_keys = list(set(ids_with_recom.keys()))
+        ids_with_recom_keys = map(int, ids_with_recom_keys)
+        ids_with_recom_keys = sorted(ids_with_recom_keys)
+
+        for v in ids_with_recom_keys:
+            v_str = str(v)
+            ids_with_recom_values = ids_with_recom[v_str]
+            print ids_with_recom[v_str]
+
+            for v2 in ids_with_recom_keys:
+
+                if(v == v2):
+                    continue
+
+                v2_str = str(v2)
+                ids_with_recom_values2 = ids_with_recom[v2_str]'''
+
+    '''for item in ids_with_recom_values:
+           print item'''
+    '''for x in range(1, 10):
+        print ids_with_recom_values[x]
+        print ids_with_recom_values[x][1]
+        print type(ids_with_recom_values[x][1])'''
+
+
+        #for item in ids_with_recom_keys:
+        #    print item
+
+
+    '''print("Done creating.")
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")'''
+
 
 
 
