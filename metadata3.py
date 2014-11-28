@@ -55,6 +55,9 @@ import csv
 import numpy as np
 import snap
 import collections
+from scipy import spatial
+import math
+
 
 similaritynetworkfilename = 'similar-network.txt'
 nodes = {}  # dictionary of nodes indexed by id. it holds objects of class Node
@@ -73,10 +76,52 @@ diff_dict_rand1 = {}
 diff_dict_rand2 = {}
 simrank_dict = {}
 toList = []
+
 rec_graph = snap.LoadEdgeList(snap.PNGraph, "recommended.txt", 0, 1)
 copur_graph = snap.LoadEdgeList(snap.PNGraph, "copurchased.txt", 0, 1)
 rec_rand1_graph = snap.LoadEdgeList(snap.PNGraph, "recom-rand1.txt", 0, 1)
 rec_rand2_graph = snap.LoadEdgeList(snap.PNGraph, "recom-rand2.txt", 0, 1)
+
+copur_book_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_copurchase-book.txt", 0, 1)
+copur_dvd_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_copurchase-dvd.txt", 0, 1)
+copur_music_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_copurchase-music.txt", 0, 1)
+copur_video_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_copurchase-video.txt", 0, 1)
+
+recom_book_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recommendation-book.txt", 0, 1)
+recom_dvd_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recommendation-dvd.txt", 0, 1)
+recom_music_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recommendation-music.txt", 0, 1)
+recom_video_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recommendation-video.txt", 0, 1)
+
+rand1_book_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recom-rand1-book.txt", 0, 1)
+rand1_dvd_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recom-rand1-dvd.txt", 0, 1)
+rand1_music_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recom-rand1-music.txt", 0, 1)
+rand1_video_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recom-rand1-video.txt", 0, 1)
+
+rand2_book_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recom-rand2-book.txt", 0, 1)
+rand2_dvd_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recom-rand2-dvd.txt", 0, 1)
+rand2_music_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recom-rand2-music.txt", 0, 1)
+rand2_video_graph = snap.LoadEdgeList(snap.PNGraph, "subgraphs/_recom-rand2-video.txt", 0, 1)
+
+
+copur_book_dict = {}
+copur_dvd_dict = {}
+copur_music_dict = {}
+copur_video_dict = {}
+
+recom_book_dict = {}
+recom_dvd_dict = {}
+recom_music_dict = {}
+recom_video_dict = {}
+
+rand1_book_dict = {}
+rand1_dvd_dict = {}
+rand1_music_dict = {}
+rand1_vieo_dict = {}
+
+rand2_book_dict = {}
+rand2_dvd_dict = {}
+rand2_music_dict = {}
+rand2_video_dict = {}
 
 
 class NodeItem(object):
@@ -192,15 +237,7 @@ def handleReviewData(line, newNode):
 # filename = "amazon-meta-sample.txt"
 filename = "amazon-meta.txt"
 #filename = "amazon-meta-short.txt"
-filename2 = "recommended.txt"
-filename3 = "copurchased.txt"
-filename_rand1 = "recom-rand1.txt"
-filename_rand2 = "recom-rand2.txt"
 my_text = open(filename, "r")
-my_text2 = open(filename2, "r") #
-my_text3 = open(filename3, "r")
-my_text_rand1 = open(filename_rand1, "r")
-my_text_rand2 = open(filename_rand2, "r");
 
 # used to read data from the meta-data.txt and store it in a dictionary called nodes
 def process_file(filename):
@@ -271,7 +308,8 @@ def process_file(filename):
 
     print("Total Nodes Processed: " + str(len(nodes)))
 
-def process_graph_file(filename, dict, mytext):
+def process_graph_file(filename, dict):
+    mytext = open(filename, "r")
     prev_from_id = 0
 
     with mytext:
@@ -301,7 +339,7 @@ def process_graph_file(filename, dict, mytext):
             line = mytext.readline()
             line = line.strip()
 
-    print("Total Nodes Processed: " + str(len(ids_with_recom)))
+    print("Total Nodes Processed: " + str(len(dict)))
 
 
 def cmdPrintAllNodeData(passednode):
@@ -484,6 +522,46 @@ class cmdShell(cmd.Cmd):
         print("DONE Performing Jaccard comparison with the files")
         print("Done. Execution Time: " + str(total_time) + " secs.")
 
+    def do_jaccardcomparegroups(self, line):
+        'Compares the groups of items of the copurchasing data with the recommended and random data (Jaccard Sim). No parameters.'
+        start_time = time.clock()
+        print("START Performing Jaccard comparison with recommended file for books")
+        jaccardcomparegroups("book-recom")
+        print("DONE Performing Jaccard comparison with recommended file for books")
+
+        print("START Performing Jaccard comparison with recommended file for dvds")
+        jaccardcomparegroups("dvd-recom")
+        print("DONE Performing Jaccard comparison with recommended file for dvds")
+
+        print("START Performing Jaccard comparison with recommended file for music")
+        jaccardcomparegroups("music-recom")
+        print("DONE Performing Jaccard comparison with recommended file for music")
+
+        print("START Performing Jaccard comparison with recommended file for videos")
+        jaccardcomparegroups("video-recom")
+        print("DONE Performing Jaccard comparison with recommended file for videos")
+
+        print("START Performing Jaccard comparison with random file for books")
+        jaccardcomparegroups("book-rand")
+        print("DONE Performing Jaccard comparison with random file for books")
+
+        print("START Performing Jaccard comparison with random file for dvds")
+        jaccardcomparegroups("dvd-rand")
+        print("DONE Performing Jaccard comparison with random file for dvds")
+
+        print("START Performing Jaccard comparison with random file for music")
+        jaccardcomparegroups("music-rand")
+        print("DONE Performing Jaccard comparison with random file for music")
+
+        print("START Performing Jaccard comparison with random file for videos")
+        jaccardcomparegroups("video-rand")
+        print("DONE Performing Jaccard comparison with random file for videos")
+
+        end_time = time.clock()
+        total_time = end_time - start_time
+        print("DONE Performing Jaccard comparison with the files")
+        print("Done. Execution Time: " + str(total_time) + " secs.")
+
     def do_cosinesim(self, line):
         'Compares the items of the copurchasing data with the recommended and random data (Cosine sim). No parameters.'
         start_time = time.clock()
@@ -511,11 +589,43 @@ class cmdShell(cmd.Cmd):
             print "Random Graph 2: Nodes %d, Edges %d" % (rec_rand2_graph.GetNodes(), rec_rand2_graph.GetEdges())
 
     def do_getpagerank(self,line):
-        'Prints the pagerank difference of recommandation compared to: copur, ran'
+        'Prints the pagerank difference of recommandation compared to: copur, ran, groups'
         if line == 'copur':
             pagerank("copur")
         elif line == 'ran':
             pagerank("ran")
+        elif line == 'groups':
+            print("START Performing PageRank comparison with recommended file for books")
+            pagerank("book-recom")
+            print("DONE Performing PageRank comparison with recommended file for books")
+
+            print("START Performing PageRank comparison with recommended file for dvds")
+            pagerank("dvd-recom")
+            print("DONE Performing PageRank comparison with recommended file for dvds")
+
+            print("START Performing PageRank comparison with recommended file for music")
+            pagerank("music-recom")
+            print("DONE Performing PageRank comparison with recommended file for music")
+
+            print("START Performing PageRank comparison with recommended file for videos")
+            pagerank("video-recom")
+            print("DONE Performing PageRank comparison with recommended file for videos")
+
+            print("START Performing PageRank comparison with random file for books")
+            pagerank("book-rand")
+            print("DONE Performing PageRank comparison with random file for books")
+
+            print("START Performing PageRank comparison with random file for dvds")
+            pagerank("dvd-rand")
+            print("DONE Performing PageRank comparison with random file for dvds")
+
+            print("START Performing PageRank comparison with random file for music")
+            pagerank("music-rand")
+            print("DONE Performing PageRank comparison with random file for music")
+
+            print("START Performing PageRank comparison with random file for videos")
+            pagerank("video-rand")
+            print("DONE Performing PageRank comparison with random file for videos")
 
     def do_simrank(self,line):
         'Prints the simrank of selected graph with recommendation and outputs in txt file: copur, ran, ran2'
@@ -525,6 +635,55 @@ class cmdShell(cmd.Cmd):
             simrank(ids_with_similar_file, ids_with_recom_rand1)
         elif line == 'ran2':
             simrank(ids_with_similar_file, ids_with_recom_rand2)
+        elif line == 'groups':
+            print("START Performing SimRank comparison with recommended file for books")
+            simrank(copur_book_dict, recom_book_dict)
+            print("DONE Performing SimRank comparison with recommended file for books")
+
+            print("START Performing SimRank comparison with recommended file for dvds")
+            simrank(copur_dvd_dict, recom_dvd_dict)
+            print("DONE Performing SimRank comparison with recommended file for dvds")
+
+            print("START Performing SimRank comparison with recommended file for music")
+            simrank(copur_music_dict, recom_music_dict)
+            print("DONE Performing SimRank comparison with recommended file for music")
+
+            print("START Performing SimRank comparison with recommended file for videos")
+            simrank(copur_video_dict, recom_video_dict)
+            print("DONE Performing SimRank comparison with recommended file for videos")
+
+            print("START Performing SimRank comparison with random file for books")
+            simrank(copur_book_dict, rand2_book_dict)
+            print("DONE Performing SimRank comparison with random file for books")
+
+            print("START Performing SimRank comparison with random file for dvds")
+            simrank(copur_dvd_dict, rand2_dvd_dict)
+            print("DONE Performing SimRank comparison with random file for dvds")
+
+            print("START Performing SimRank comparison with random file for music")
+            simrank(copur_music_dict, rand2_music_dict)
+            print("DONE Performing SimRank comparison with random file for music")
+
+            print("START Performing SimRank comparison with random file for videos")
+            simrank(copur_video_dict, rand2_video_dict)
+            print("DONE Performing SimRank comparison with random file for videos")
+
+    def do_matching(self, line):
+        'Assigns a Matching Dissimilarity score to each node comparison'
+        start_time = time.clock()
+        print("Comparing the two dictionaries: ids_with_similar_file and ids_with_recom")
+        matching(ids_with_similar_file, ids_with_recom)
+        print("Done comparing. Total items in recommended.txt = " + str(len(ids_with_recom)))
+        print("Total items in copurchased.txt = " + str(len(ids_with_similar_file)))
+
+        '''print("Comparing the two dictionaries: ids_with_similar_file and ids_with_recom_rand2")
+        matching(ids_with_similar_file, ids_with_recom_rand1)
+        print("Done comparing. Total items in recommended.txt = " + str(len(ids_with_recom)))
+        print("Total items in copurchased.txt = " + str(len(ids_with_similar_file)))'''
+
+        end_time = time.clock()
+        total_time = end_time - start_time
+        print("Done in " + str(total_time / 60) + " minute(s).")
 
 
 
@@ -619,11 +778,67 @@ def jaccardcompare(file_type):
 
     printtocsv(jaccard_scores, csv_file_name)
 
+def jaccardcomparegroups(file_type):
+    jaccard_scores = {}
+    # loop through the dictionaries and do comparison
+    for key in range(1, 361567):
+        new_key = str(key)
+        # reassign the list in value of each item to a new one so they can be compared
+        if file_type == "book-recom":
+            a = copur_book_dict.get(new_key, 'none')
+            b = recom_book_dict.get(new_key, 'none')
+            csv_file_name = "subgraphs/jaccards/jaccards_book-recom.csv"
+        elif file_type == "dvd-recom":
+            a = copur_dvd_dict.get(new_key, 'none')
+            b = recom_dvd_dict.get(new_key, 'none')
+            csv_file_name = "subgraphs/jaccards/jaccards_dvd-recom.csv"
+        elif file_type == "music-recom":
+            a = copur_music_dict.get(new_key, 'none')
+            b = recom_music_dict.get(new_key, 'none')
+            csv_file_name = "subgraphs/jaccards/jaccards_music-recom.csv"
+        elif file_type == "video-recom":
+            a = copur_video_dict.get(new_key, 'none')
+            b = recom_video_dict.get(new_key, 'none')
+            csv_file_name = "subgraphs/jaccards/jaccards_video-recom.csv"
+        elif file_type == "book-rand":
+            a = rand2_book_dict.get(new_key, 'none')
+            b = copur_book_dict.get(new_key, 'none')
+            csv_file_name = "subgraphs/jaccards/jaccards_book-rand2.csv"
+        elif file_type == "dvd-rand":
+            a = rand2_dvd_dict.get(new_key, 'none')
+            b = copur_dvd_dict.get(new_key, 'none')
+            csv_file_name = "subgraphs/jaccards/jaccards_dvd-rand2.csv"
+        elif file_type == "music-rand":
+            a = rand2_music_dict.get(new_key, 'none')
+            b = copur_music_dict.get(new_key, 'none')
+            csv_file_name = "subgraphs/jaccards/jaccards_music-rand2.csv"
+        elif file_type == "video-rand":
+            a = rand2_video_dict.get(new_key, 'none')
+            b = copur_video_dict.get(new_key, 'none')
+            csv_file_name = "subgraphs/jaccards/jaccards_video-rand2.csv"
+
+        # the dict.get(x, y): x = key of dictionary (with single quotes around it),
+        # y = if no key that is passed is found, return THIS ('none') instead
+        if (a or b) <> 'none':
+            cnt_union = len(list(set(a).union(set(b))))
+            if cnt_union > 0:
+                cnt_intersection = len(set(a).intersection(b))
+                jaccard_scores[key] = float(cnt_intersection) / float(cnt_union)
+            else:
+                jaccard_scores[key] = 0.0
+
+            if float(jaccard_scores[key]) > 0:
+                print(new_key + " = " + str(jaccard_scores[key]))
+
+    printtocsv(jaccard_scores, csv_file_name)
+
 def cosinesim(file_type):
     cosine_scores = {}
+    si = {}
     # loop through the dictionaries and do comparison by cosine similiarity
     highestall = 0
-    for key in range(1, 361567):
+    #for key in range(1, 361567):
+    for key in range(1, 10):
         new_key = str(key)
         # reassign the list in value of each item to a new one so they can be compared
         a = ids_with_similar_file.get(new_key, 'none')
@@ -665,8 +880,16 @@ def cosinesim(file_type):
             if b <> 'none':
                 # arrays must be converted to floats to have np.linalg used on them
 
+
                 a = np.array(a, np.float)
                 b = np.array(b, np.float)
+
+
+
+                #a = [25, 11, 1, 2, 6, 7, 8]
+                #b = [10, 11, 9, 17, 3, 4, 5]
+
+                #cosinesim = spatial.distance.cosine(a, b)
 
                 cosinesim = np.dot(a,b.T)/np.linalg.norm(a)/np.linalg.norm(b)
 
@@ -675,80 +898,139 @@ def cosinesim(file_type):
                 else:
                     cosine_scores[key] = 0.0
 
-                if float(cosine_scores[key]) > 0:
-                    print(new_key + " = " + str(cosine_scores[key]))
+                #if float(cosine_scores[key]) > 0:
+                print a
+                print b
+                print(new_key + " = " + str(cosine_scores[key]))
 
     printtocsv(cosine_scores, csv_file_name2)
 
 def pagerank(file_type):
-    if(file_type == "copur"):
-        start_time = time.clock()
-        print("Creating PageRank dictionaries")
+    if file_type == "copur":
+        graph1 = copur_graph
+        graph2 = rec_graph
+        csvfile = "pagerank_copur.csv"
+    elif file_type == "ran":
+        graph1 = copur_graph
+        graph2 = rec_rand2_graph
+        csvfile = "pagerank_rand.csv"
+    elif file_type == "book-recom":
+        graph1 = copur_book_graph
+        graph2 = recom_book_graph
+        csvfile = "subgraphs/pagerank/pagerank_book-recom.csv"
+    elif file_type == "dvd-recom":
+        graph1 = copur_dvd_graph
+        graph2 = recom_dvd_graph
+        csvfile = "subgraphs/pagerank/pagerank_dvd-recom.csv"
+    elif file_type == "music-recom":
+        graph1 = copur_music_graph
+        graph2 = recom_music_graph
+        csvfile = "subgraphs/pagerank/pagerank_music-recom.csv"
+    elif file_type == "video-recom":
+        graph1 = copur_video_graph
+        graph2 = recom_video_graph
+        csvfile = "subgraphs/pagerank/pagerank_video-recom.csv"
+    elif file_type == "book-rand":
+        graph1 = copur_book_graph
+        graph2 = rand2_book_graph
+        csvfile = "subgraphs/pagerank/pagerank_book-rand2.csv"
+    elif file_type == "dvd-rand":
+        graph1 = copur_dvd_graph
+        graph2 = rand2_dvd_graph
+        csvfile = "subgraphs/pagerank/pagerank_dvd-rand2.csv"
+    elif file_type == "music-rand":
+        graph1 = copur_music_graph
+        graph2 = rand2_music_graph
+        csvfile = "subgraphs/pagerank/pagerank_music-rand2.csv"
+    elif file_type == "video-rand":
+        graph1 = copur_video_graph
+        graph2 = rand2_video_graph
+        csvfile = "subgraphs/pagerank/pagerank_video-rand2.csv"
 
-        rec_pr = snap.TIntFltH()
-        copur_pr = snap.TIntFltH()
+    start_time = time.clock()
+    print("Creating PageRank dictionaries")
 
-        snap.GetPageRank(rec_graph, rec_pr)
-        snap.GetPageRank(copur_graph, copur_pr)
+    pagerank_dict1 = {}
+    pagerank_dict2 = {}
 
-        for item in rec_pr:
-            rec_pagerank_dict[item] = rec_pr[item] * 10000000
-        print "Recommendation dictionary created"
-        for item in copur_pr:
-            copur_pagerank_dict[item] = copur_pr[item] * 10000000
-        print "CoPurchase dictionary created"
+    snap_pr1 = snap.TIntFltH()
+    snap_pr2 = snap.TIntFltH()
+
+    snap.GetPageRank(graph1, snap_pr1)
+    snap.GetPageRank(graph2, snap_pr2)
+
+    for item in snap_pr1:
+        pagerank_dict1[item] = snap_pr1[item] * 100
+    print "Recommendation dictionary created"
+    for item in snap_pr2:
+        pagerank_dict2[item] = snap_pr2[item] * 100
+    print "CoPurchase dictionary created"
 
 
-        for x in range(1, 300000):
-            if(x in rec_pagerank_dict):
-                if(x in copur_pagerank_dict):
+    for x in range(1, 300000):
+        if(x in pagerank_dict1):
+            if(x in pagerank_dict2):
 
-                    diff_dict[x] = rec_pagerank_dict[x] - copur_pagerank_dict[x] # negative if less recommended than purchased
+                diff_dict[x] = pagerank_dict1[x] - pagerank_dict2[x] # negative if less recommended than purchased
 
-        printtocsv(diff_dict, "CoPurPageRank.csv")
+    printtocsv(diff_dict, csvfile)
 
-        print("Done creating.")
-        end_time = time.clock()
-        total_time = end_time - start_time
-        print("Done in " + str(total_time / 60) + " minute(s).")
+    '''start_time = time.clock()
+    print("Creating PageRank dictionaries")
 
-    elif(file_type == "ran"):
-        start_time = time.clock()
-        print("Creating PageRank dictionaries")
-        rec_pr = snap.TIntFltH()
-        rand1_pr = snap.TIntFltH()
-        rand2_pr = snap.TIntFltH()
+    rec_pr = snap.TIntFltH()
+    copur_pr = snap.TIntFltH()
 
-        snap.GetPageRank(rec_graph, rec_pr)
-        snap.GetPageRank(rec_rand1_graph, rand1_pr)
-        snap.GetPageRank(rec_rand2_graph, rand2_pr)
+    snap.GetPageRank(rec_graph, rec_pr)
+    snap.GetPageRank(copur_graph, copur_pr)
 
-        for item in rec_pr:
-            rec_pagerank_dict[item] = rec_pr[item] * 10000000
-        for item in rand1_pr:
-            rec_rand1_pagerank_dict[item] = rand1_pr[item] * 10000000
-        for item in rand2_pr:
-            rec_rand2_pagerank_dict[item] = rand2_pr[item] * 10000000
+    for item in rec_pr:
+        rec_pagerank_dict[item] = rec_pr[item] * 100
+    print "Recommendation dictionary created"
+    for item in copur_pr:
+        copur_pagerank_dict[item] = copur_pr[item] * 100
+    print "CoPurchase dictionary created"
 
-        for x in range(1, 300000):
-            if(x in rec_pagerank_dict):
-                if(x in rec_rand1_pagerank_dict):
 
-                    diff_dict_rand1[x] = rec_pagerank_dict[x] - rec_rand1_pagerank_dict[x] # negative if less recommended than purchased
+    for x in range(1, 300000):
+        if(x in rec_pagerank_dict):
+            if(x in copur_pagerank_dict):
 
-        for x in range(1, 300000):
-            if(x in rec_pagerank_dict):
-                if(x in rec_rand2_pagerank_dict):
+                diff_dict[x] = rec_pagerank_dict[x] - copur_pagerank_dict[x] # negative if less recommended than purchased
 
-                    diff_dict_rand2[x] = rec_pagerank_dict[x] - rec_rand2_pagerank_dict[x] # negative if less recommended than purchased
+    printtocsv(diff_dict, "pagerank_copur.csv")'''
 
-        printtocsv(diff_dict_rand1, "Rand1PageRank.csv")
-        printtocsv(diff_dict_rand2, "Rand2PageRank.csv")
+    print("Done creating.")
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
 
-        print("Done creating.")
-        end_time = time.clock()
-        total_time = end_time - start_time
-        print("Done in " + str(total_time / 60) + " minute(s).")
+'''elif(file_type == "rand"):
+    start_time = time.clock()
+    print("Creating PageRank dictionaries")
+    rec_pr = snap.TIntFltH()
+    rand2_pr = snap.TIntFltH()
+
+    snap.GetPageRank(copur_graph, rec_pr)
+    snap.GetPageRank(rec_rand2_graph, rand2_pr)
+
+    for item in rec_pr:
+        copur_pagerank_dict[item] = rec_pr[item] * 100
+    for item in rand2_pr:
+        rec_rand2_pagerank_dict[item] = rand2_pr[item] * 100
+
+    for x in range(1, 300000):
+        if(x in copur_pagerank_dict):
+            if(x in rec_rand2_pagerank_dict):
+
+                diff_dict_rand2[x] = copur_pagerank_dict[x] - rec_rand2_pagerank_dict[x] # negative if less recommended than purchased
+
+    printtocsv(diff_dict_rand2, "pagerank_rand2.csv")
+
+    print("Done creating.")
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")'''
 
 def simrank(dict1, dict2):
 
@@ -778,57 +1060,29 @@ def simrank(dict1, dict2):
 
             simrank_dict[new_key] = simrank
 
-            print "key: %s simrank: %f" % (new_key, float(simrank))
-            print '------------------------'
+            #print "key: %s simrank: %f" % (new_key, float(simrank))
+            #print '------------------------'
 
     if dict2 == ids_with_recom:
         printtocsv(simrank_dict, "simrank_copur.csv")
     elif dict2 == ids_with_recom_rand1:
         printtocsv(simrank_dict, "simrank_rand1.csv")
-    elif dict2 == ids_with_recom_rand2:
-        printtocsv(simrank_dict, "simrank_rand2.csv")
-
-
-
-
-
-
-
-
-    '''ids_with_recom_keys = list(set(ids_with_recom.keys()))
-        ids_with_recom_keys = map(int, ids_with_recom_keys)
-        ids_with_recom_keys = sorted(ids_with_recom_keys)
-
-        for v in ids_with_recom_keys:
-            v_str = str(v)
-            ids_with_recom_values = ids_with_recom[v_str]
-            print ids_with_recom[v_str]
-
-            for v2 in ids_with_recom_keys:
-
-                if(v == v2):
-                    continue
-
-                v2_str = str(v2)
-                ids_with_recom_values2 = ids_with_recom[v2_str]'''
-
-    '''for item in ids_with_recom_values:
-           print item'''
-    '''for x in range(1, 10):
-        print ids_with_recom_values[x]
-        print ids_with_recom_values[x][1]
-        print type(ids_with_recom_values[x][1])'''
-
-
-        #for item in ids_with_recom_keys:
-        #    print item
-
-
-    '''print("Done creating.")
-    end_time = time.clock()
-    total_time = end_time - start_time
-    print("Done in " + str(total_time / 60) + " minute(s).")'''
-
+    elif dict2 == recom_book_dict:
+        printtocsv(simrank_dict, "simrank_book-recom.csv")
+    elif dict2 == recom_dvd_dict:
+        printtocsv(simrank_dict, "simrank_dvd-recom.csv")
+    elif dict2 == recom_music_dict:
+        printtocsv(simrank_dict, "simrank_music-recom.csv")
+    elif dict2 == recom_video_dict:
+        printtocsv(simrank_dict, "simrank_video-recom.csv")
+    elif dict2 == rand2_book_dict:
+        printtocsv(simrank_dict, "simrank_book-rand2.csv")
+    elif dict2 == rand2_dvd_dict:
+        printtocsv(simrank_dict, "simrank_dvd-rand2.csv")
+    elif dict2 == rand2_music_dict:
+        printtocsv(simrank_dict, "simrank_music-rand2.csv")
+    elif dict2 == rand2_video_dict:
+        printtocsv(simrank_dict, "simrank_video-rand2.csv")
 
 
 
@@ -878,6 +1132,56 @@ def comparedicts(dict1, dict2):
     print "Count of 3: %d " % count3
     print "Count of 4: %d " % count4
 
+def matching(dict1, dict2):
+    matching_dict = {}
+
+    # loop through the dictionaries and do comparison
+    for key in range(1, 361567):
+        # key here has to be formatted to be used with dict.get.  Needs
+        # to be in format of '1' instead of just 1
+        new_key = key
+        new_key = '%d' % new_key
+
+        # reassign the list in value of each item to a new one so they can be compared
+        a = dict1.get(new_key, 'none')
+        b = dict2.get(new_key, 'none')
+
+        if a <> 'none':
+            if b <> 'none':
+                if(len(a) <> len(b)):
+                    toaddA = 7 - len(a)
+                    toaddB = 7 - len(b)
+                    counterA = toaddA
+                    counterB = toaddB
+                    for x in range(0, toaddA):
+                        a.insert(counterA, 0)
+                        ++counterA
+                    for y in range(0, toaddB):
+                        b.insert(counterB, 0)
+                        ++counterB
+
+        # the dict.get(x, y): x = key of dictionary (with single quotes around it),
+        # y = if no key that is passed is found, return THIS ('none') instead
+        if a <> 'none':
+            if b <> 'none':
+
+                a = np.array(a, np.float)
+                b = np.array(b, np.float)
+
+                matchingscore = spatial.distance.euclidean(a,b)
+
+                matching_dict[new_key] = matchingscore
+
+    printtocsv(matching_dict, "matching_copur.csv")
+
+    '''print a
+    print b
+    print "key: %s" % new_key
+    print matchingscore
+    print len(set(a).intersection(b))
+    print len(a) + len(b)
+    print '------------------------'''''
+
 
 def main():
     # These two functions below are commented out because we are now using the actual
@@ -900,10 +1204,27 @@ def main():
     total_time = end_time - start_time
     print("Done in " + str(total_time / 60) + " minute(s).")'''
 
-    # Creating ids_with_recom from amazon0302.txt
+    # Creating ids_with_recom_rand1 from recom-rand1.txt
+    '''start_time = time.clock()
+    print("Creating random recommendation list from recom-rand1.txt")
+    process_graph_file("recom-rand1.txt", ids_with_recom_rand1)
+    print("Done connecting. total items = " + str(len(ids_with_recom_rand1)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    # Creating ids_with_recom_rand2 from recom-rand2.txt
+    start_time = time.clock()
+    print("Creating random recommendation list from recom-rand2.txt")
+    process_graph_file("recom-rand2.txt", ids_with_recom_rand2)
+    print("Done connecting. total items = " + str(len(ids_with_recom_rand2)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
     start_time = time.clock()
     print("Creating recommendation list from recommended.txt")
-    process_graph_file(filename2, ids_with_recom, my_text2)
+    process_graph_file("recommended.txt", ids_with_recom)
     print("Done connecting. total items = " + str(len(ids_with_recom)))
     end_time = time.clock()
     total_time = end_time - start_time
@@ -913,43 +1234,109 @@ def main():
     # Creating ids_with_similar_file from similar-network.txt
     start_time = time.clock()
     print("Creating similar list from copurchased.txt")
-    process_graph_file(filename3, ids_with_similar_file, my_text3)
+    process_graph_file("copurchased.txt", ids_with_similar_file)
     print("Done connecting. total items = " + str(len(ids_with_similar_file)))
     end_time = time.clock()
     total_time = end_time - start_time
-    print("Done in " + str(total_time / 60) + " minute(s).")
+    print("Done in " + str(total_time / 60) + " minute(s).")'''
     #printtocsv(ids_with_similar_file, "dict4.csv")
 
-    # the below will be part of the cmd shell
-    # Compare the two dictionaries
-    '''start_time = time.clock()
-    print("Comparing the two dictionaries: ids_with_similar_file and ids_with_recom")
-    #comparefulldicts()
-    print("Done comparing. Total items in amazon0302.txt = " + str(len(ids_with_recom)))
-    print("Total items in similar-network.txt = " + str(len(ids_with_similar_file)))
-    end_time = time.clock()
-    total_time = end_time - start_time
-    print("Done in " + str(total_time / 60) + " minute(s).")'''
-
-    # Creating ids_with_recom_rand1 from recom-rand1.txt
+    # Creating group based dictionaries
     start_time = time.clock()
-    print("Creating random recommendation list from recom-rand1.txt")
-    process_graph_file(filename_rand1, ids_with_recom_rand1, my_text_rand1)
-    print("Done connecting. total items = " + str(len(ids_with_recom_rand1)))
+    print("Creating copurchased book dictionary from _copurchase-book.txt")
+    process_graph_file("subgraphs/_copurchase-book.txt", copur_book_dict)
+    print("Done connecting. total items = " + str(len(copur_book_dict)))
     end_time = time.clock()
     total_time = end_time - start_time
     print("Done in " + str(total_time / 60) + " minute(s).")
 
-    # Creating ids_with_recom_rand2 from recom-rand2.txt
     start_time = time.clock()
-    print("Creating random recommendation list from recom-rand2.txt")
-    process_graph_file(filename_rand2, ids_with_recom_rand2, my_text_rand2)
-    print("Done connecting. total items = " + str(len(ids_with_recom_rand2)))
+    print("Creating copurchased dvd dictionary from _copurchase-dvd.txt")
+    process_graph_file("subgraphs/_copurchase-dvd.txt", copur_dvd_dict)
+    print("Done connecting. total items = " + str(len(copur_dvd_dict)))
     end_time = time.clock()
     total_time = end_time - start_time
     print("Done in " + str(total_time / 60) + " minute(s).")
 
+    start_time = time.clock()
+    print("Creating copurchased music dictionary from _copurchase-music.txt")
+    process_graph_file("subgraphs/_copurchase-music.txt", copur_music_dict)
+    print("Done connecting. total items = " + str(len(copur_music_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
 
+    start_time = time.clock()
+    print("Creating copurchased video dictionary from _copurchase-video.txt")
+    process_graph_file("subgraphs/_copurchase-video.txt", copur_video_dict)
+    print("Done connecting. total items = " + str(len(copur_video_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    start_time = time.clock()
+    print("Creating recommended book dictionary from _recommendation-book.txt")
+    process_graph_file("subgraphs/_recommendation-book.txt", recom_book_dict)
+    print("Done connecting. total items = " + str(len(recom_book_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    start_time = time.clock()
+    print("Creating recommended dvd dictionary from _recommendation-dvd.txt")
+    process_graph_file("subgraphs/_recommendation-dvd.txt", recom_dvd_dict)
+    print("Done connecting. total items = " + str(len(recom_dvd_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    start_time = time.clock()
+    print("Creating recommended music dictionary from _recommendation-music.txt")
+    process_graph_file("subgraphs/_recommendation-music.txt", recom_music_dict)
+    print("Done connecting. total items = " + str(len(recom_music_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    start_time = time.clock()
+    print("Creating recommended video dictionary from _recommendation-video.txt")
+    process_graph_file("subgraphs/_recommendation-video.txt", recom_video_dict)
+    print("Done connecting. total items = " + str(len(recom_video_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    start_time = time.clock()
+    print("Creating random book dictionary from _recom-rand2-book.txt")
+    process_graph_file("subgraphs/_recom-rand2-book.txt", rand2_book_dict)
+    print("Done connecting. total items = " + str(len(rand2_book_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    start_time = time.clock()
+    print("Creating random dvd dictionary from _recom-rand2-dvd.txt")
+    process_graph_file("subgraphs/_recom-rand2-dvd.txt", rand2_dvd_dict)
+    print("Done connecting. total items = " + str(len(rand2_dvd_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    start_time = time.clock()
+    print("Creating random music dictionary from _recom-rand2.txt")
+    process_graph_file("subgraphs/_recom-rand2-music.txt", rand2_music_dict)
+    print("Done connecting. total items = " + str(len(rand2_music_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
+
+    start_time = time.clock()
+    print("Creating random video dictionary from _recom-rand2-video.txt")
+    process_graph_file("subgraphs/_recom-rand2-video.txt", rand2_video_dict)
+    print("Done connecting. total items = " + str(len(rand2_video_dict)))
+    end_time = time.clock()
+    total_time = end_time - start_time
+    print("Done in " + str(total_time / 60) + " minute(s).")
 
 
 if __name__ == "__main__":
